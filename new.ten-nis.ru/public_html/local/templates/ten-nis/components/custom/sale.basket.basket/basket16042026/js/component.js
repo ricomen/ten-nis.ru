@@ -1073,17 +1073,44 @@
 			}
 		},
 
+		// checkSimilar: function (itemData) {
+		// 	if (!itemData)
+		// 		return;
+		// 	setTimeout(() => {
+		// 		if (itemData.ID_REAL && this.getEntity(BX(this.ids.itemListTable), "not-exists-footer", '[data-id-real="' + itemData.ID_REAL + '"]'))
+		// 			this.getEntity(BX(this.ids.itemListTable), "not-exists-footer", '[data-id-real="' + itemData.ID_REAL + '"]').remove();
+		// 		let neh = this.getEntity(BX(this.ids.itemListTable), "not-exists-header"), pr = this.getEntities(BX(this.ids.itemListTable), "basket-item", "[data-not-exists]");
+		// 		console.log(pr);
+		// 		console.log(neh);
+		// 		if (!(pr.length > 0))
+		// 			neh.remove();
+		// 	}, 1000);
+		// },
+
 		checkSimilar: function (itemData) {
-			if (!itemData)
-				return;
+			if (!itemData) return;
+		
 			setTimeout(() => {
-				if (itemData.ID_REAL && this.getEntity(BX(this.ids.itemListTable), "not-exists-footer", '[data-id-real="' + itemData.ID_REAL + '"]'))
-					this.getEntity(BX(this.ids.itemListTable), "not-exists-footer", '[data-id-real="' + itemData.ID_REAL + '"]').remove();
-				let neh = this.getEntity(BX(this.ids.itemListTable), "not-exists-header"), pr = this.getEntities(BX(this.ids.itemListTable), "basket-item", "[data-not-exists]");
-				console.log(pr);
-				console.log(neh);
-				if (!(pr.length > 0))
-					neh.remove();
+				const table = BX(this.ids.itemListTable);
+		
+				if (itemData.ID_REAL) {
+					const footer = this.getEntity(
+						table,
+						"not-exists-footer",
+						`[data-id-real="${itemData.ID_REAL}"]`
+					);
+		
+					if (footer) {
+						footer.remove();
+					}
+				}
+		
+				const header = this.getEntity(table, "not-exists-header");
+				const items = this.getEntities(table, "basket-item", "[data-not-exists]");
+		
+				if (header && items.length === 0) {
+					header.remove();
+				}
 			}, 1000);
 		},
 
@@ -2116,7 +2143,7 @@
 		},
 
 		startDeleteInterval: function (node) {
-			console.log("node", node)
+			console.log('node', node)
 			this.deleteDelay = setTimeout(
 				BX.delegate(function () {
 					var prevTimerId = node && node.dataset ? node.dataset.timerId : null;
@@ -2144,7 +2171,6 @@
 						var offset = circumference * (1 - progress);
 
 						$timerValue.querySelector('.timer-progress-bar').style.strokeDashoffset = offset;
-
 						$timerValue.querySelector('.timer-progress-text').innerHTML = secondsLeft;
 
 						if (secondsLeft <= 0) {
@@ -2153,8 +2179,8 @@
 							if (node && node.dataset && node.dataset.timerId === timerId) {
 								delete node.dataset.timerId;
 							}
-							node.remove();
-	
+							node.remove()
+
 							return;
 						}
 						secondsLeft--;
@@ -2335,28 +2361,65 @@
 			var basketItemTemplate = this.getTemplate('basket-string-high-template');
 			if (basketItemTemplate) {
 				var basketItemHtml = this.renderBasketItem(basketItemTemplate, this.items[itemId]);
-				if (BX(this.ids.item + itemId)) {
-					BX(this.ids.item + itemId).insertAdjacentHTML('afterend', basketItemHtml);
+				if(BX(this.ids.item + itemId)) {
+					BX(this.ids.item + itemId).insertAdjacentHTML('afterend', basketItemHtml);					
 					this.bindStringHighEvents(itemId);
 				}
 			}
 		},
-		bindStringHighEvents: function (itemId) {
+		bindStringHighEvents:  function (itemId) {
 			let sh = BX("basket-string-" + itemId);
-			if (!sh)
+			if(!sh)
 				return;
-
+			
 			BX.bind(sh.querySelector("[data-high-hide]"), 'click', BX.proxy(this.highHide, this));
 			BX.bind(sh.querySelector("[data-high-add]"), 'click', BX.proxy(this.highAdd, this));
 		},
 		highAdd: function () {
-			var itemData = BX.proxy_context;
+			let itemData = BX.proxy_context, 
+			data = {
+				"ajax_basket": "Y",
+				"product_id":"",
+				"action":"add",
+				"string_id":itemData.closest('[data-entity="basket-item-string-high"]').dataset.string,
+				"string_high":itemData.closest('[data-entity="basket-item-string-high"]').dataset.stringHigh,
+				"quantity":"",
+				"basket_props":"",
+				"prop[]":0,
+			};
+			console.log(data);
+							/*
+ajax_basket=Y
+&product_id=14773
+4&action=add
+&string_id=118468
+&string_high=133366
+&quantity=1
+&basket_props=YToxOntpOjA7czoyMjoiUFJPUF9FWExfUkFaTUVSX1JVQ0hLSSI7fQ%3D%3D
+&prop%5B%5D=0
 
+							 ajax_basket
+Y
+product_id
+147734
+action
+add
+string_id
+118468
+string_high
+133366
+quantity
+1
+basket_props
+YToxOntpOjA7czoyMjoiUFJPUF9FWExfUkFaTUVSX1JVQ0hLSSI7fQ==
+prop[]
+0
+							  */	
 		},
 		highHide: function () {
-			var itemData = BX.proxy_context;
-			if (itemData)
-				itemData.closest('[data-entity="basket-item-string-high"]').style.display = 'none';
+			let itemData = BX.proxy_context;
+			if (itemData) 
+				itemData.closest('[data-entity="basket-item-string-high"]').style.display = 'none';						
 		},
 	};
 })();
