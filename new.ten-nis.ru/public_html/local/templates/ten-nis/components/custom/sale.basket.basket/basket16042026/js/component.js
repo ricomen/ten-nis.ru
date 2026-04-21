@@ -1,4 +1,4 @@
-;(function () {
+; (function () {
 	'use strict';
 
 	BX.namespace('BX.Sale.BasketComponent');
@@ -2116,6 +2116,12 @@
 		startDeleteInterval: function (node) {
 			this.deleteDelay = setTimeout(
 				BX.delegate(function () {
+					var prevTimerId = node && node.dataset ? node.dataset.timerId : null;
+					if (prevTimerId && this.deleteTimer && this.deleteTimer[prevTimerId]) {
+						clearInterval(this.deleteTimer[prevTimerId]);
+						delete this.deleteTimer[prevTimerId];
+					}
+
 					var timerId = 'timer_' + Date.now() + '_' + Math.random();
 					var secondsLeft = 10;
 					var $timerValue = node.querySelector('[data-table-item-timer]');
@@ -2136,16 +2142,16 @@
 
 						$timerValue.querySelector('.timer-progress-bar').style.strokeDashoffset = offset;
 
-						console.log(
-							secondsLeft,
-							$timerValue,
-							$timerValue.querySelector('.timer-progress-text')
-						);
+
 
 						$timerValue.querySelector('.timer-progress-text').innerHTML = secondsLeft;
 
 						if (secondsLeft <= 0) {
 							clearInterval(this.deleteTimer[timerId]);
+							delete this.deleteTimer[timerId];
+							if (node && node.dataset && node.dataset.timerId === timerId) {
+								delete node.dataset.timerId;
+							}
 							$originalRow.remove();
 							$deleteRow.remove();
 							return;
@@ -2160,9 +2166,25 @@
 			);
 		},
 
-		clearDeleteInterval: function () {
+		clearDeleteInterval: function (timerId) {
 			clearTimeout(this.deleteDelay);
-			clearInterval(this.deleteTimer);
+
+			if (timerId) {
+				if (this.deleteTimer && this.deleteTimer[timerId]) {
+					clearInterval(this.deleteTimer[timerId]);
+					delete this.deleteTimer[timerId];
+				}
+				return;
+			}
+
+			if (this.deleteTimer) {
+				for (var id in this.deleteTimer) {
+					if (this.deleteTimer.hasOwnProperty(id)) {
+						clearInterval(this.deleteTimer[id]);
+					}
+				}
+			}
+			this.deleteTimer = {};
 		},
 
 		bindItemWarningEvents: function (node, data) {
