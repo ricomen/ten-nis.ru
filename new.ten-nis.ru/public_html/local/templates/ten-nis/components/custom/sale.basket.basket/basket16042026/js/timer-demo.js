@@ -59,6 +59,22 @@
 				}
 			});
 		}
+
+		// Project-like row: clicking the trash icon should start the delete timer.
+		var projectRow = document.getElementById('basket-item-53852');
+		var deleteBtn = projectRow
+			? projectRow.querySelector('[data-entity="basket-item-delete"]')
+			: null;
+
+		if (deleteBtn && projectRow) {
+			deleteBtn.addEventListener('click', function (e) {
+				e.preventDefault();
+
+				if (typeof component.startDeleteInterval === 'function') {
+					component.startDeleteInterval(projectRow);
+				}
+			});
+		}
 	});
 })();
 

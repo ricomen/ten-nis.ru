@@ -1050,8 +1050,10 @@
 					break;
 				}
 				this.createBasketItem(this.sortedItems[i]);
-				this.createStringHigh(this.sortedItems[i]);
 				this.checkIsNotCanBuy(this.items[this.sortedItems[i]]);
+			}
+			for (var i = 0; i < this.sortedItems.length; i++) {
+				this.createStringHigh(this.sortedItems[i]);
 			}
 			this.loadSimilar();
 			this.loadProductSales();
@@ -2114,6 +2116,7 @@
 		},
 
 		startDeleteInterval: function (node) {
+			console.log("node", node)
 			this.deleteDelay = setTimeout(
 				BX.delegate(function () {
 					var prevTimerId = node && node.dataset ? node.dataset.timerId : null;
@@ -2142,8 +2145,6 @@
 
 						$timerValue.querySelector('.timer-progress-bar').style.strokeDashoffset = offset;
 
-
-
 						$timerValue.querySelector('.timer-progress-text').innerHTML = secondsLeft;
 
 						if (secondsLeft <= 0) {
@@ -2152,8 +2153,8 @@
 							if (node && node.dataset && node.dataset.timerId === timerId) {
 								delete node.dataset.timerId;
 							}
-							$originalRow.remove();
-							$deleteRow.remove();
+							node.remove();
+	
 							return;
 						}
 						secondsLeft--;
@@ -2334,30 +2335,28 @@
 			var basketItemTemplate = this.getTemplate('basket-string-high-template');
 			if (basketItemTemplate) {
 				var basketItemHtml = this.renderBasketItem(basketItemTemplate, this.items[itemId]);
-				var sortIndex = BX.util.array_search(itemId, this.sortedItems);
-
-				if (this.shownItems.length && sortIndex >= 0) {
-					if (sortIndex < BX.util.array_search(this.shownItems[0], this.sortedItems)) {
-						// insert before
-						BX(this.ids.item + this.shownItems[0]).insertAdjacentHTML('beforebegin', basketItemHtml);
-						this.shownItems.unshift(itemId);
-					}
-					else if (sortIndex > BX.util.array_search(this.shownItems[this.shownItems.length - 1], this.sortedItems)) {
-						// insert after
-						BX(this.ids.item + this.shownItems[this.shownItems.length - 1]).insertAdjacentHTML('afterend', basketItemHtml);
-						this.shownItems.push(itemId);
-					}
-					else {
-						// insert between
-						BX(this.ids.item + this.sortedItems[sortIndex + 1]).insertAdjacentHTML('beforebegin', basketItemHtml);
-						this.shownItems.splice(sortIndex + 1, 0, itemId);
-					}
-				}
-				else {
-					this.getCacheNode(this.ids.itemListTable).insertAdjacentHTML('beforeend', basketItemHtml);
-					this.shownItems.push(itemId);
+				if (BX(this.ids.item + itemId)) {
+					BX(this.ids.item + itemId).insertAdjacentHTML('afterend', basketItemHtml);
+					this.bindStringHighEvents(itemId);
 				}
 			}
+		},
+		bindStringHighEvents: function (itemId) {
+			let sh = BX("basket-string-" + itemId);
+			if (!sh)
+				return;
+
+			BX.bind(sh.querySelector("[data-high-hide]"), 'click', BX.proxy(this.highHide, this));
+			BX.bind(sh.querySelector("[data-high-add]"), 'click', BX.proxy(this.highAdd, this));
+		},
+		highAdd: function () {
+			var itemData = BX.proxy_context;
+
+		},
+		highHide: function () {
+			var itemData = BX.proxy_context;
+			if (itemData)
+				itemData.closest('[data-entity="basket-item-string-high"]').style.display = 'none';
 		},
 	};
 })();
