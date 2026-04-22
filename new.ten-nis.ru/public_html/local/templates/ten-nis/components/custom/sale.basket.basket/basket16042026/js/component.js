@@ -1627,6 +1627,11 @@
 				this.bindRestoreAction(itemNode, itemData);
 				this.bindItemWarningEvents(itemNode, itemData);
 			}
+
+			var restoreNode = BX(this.ids.itemHeightAligner + itemData.ID);
+			if (BX.type.isDomNode(restoreNode)) {
+				this.bindRestoreAction(restoreNode, itemData);
+			}
 			/*if (BX.type.isDomNode(BX(this.ids.itemHeightAligner + itemData.ID)))
 				BX.bind(BX(this.ids.itemHeightAligner + itemData.ID), 'click', BX.proxy(this.startDeleteInterval, this));
 			console.log([
@@ -2215,11 +2220,11 @@
 						if (node && node.dataset && node.dataset.timerId === timerId) {
 							delete node.dataset.timerId;
 						}
-						var rowToRemove = getRowToRemove();
+						// var rowToRemove = getRowToRemove();
 
-						if (rowToRemove && rowToRemove.remove) {
-							rowToRemove.remove();
-						}
+						// if (rowToRemove && rowToRemove.remove) {
+						// 	rowToRemove.remove();
+						// }
 
 						return;
 					}
