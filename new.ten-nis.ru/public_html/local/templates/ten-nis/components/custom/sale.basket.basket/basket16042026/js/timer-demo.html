@@ -344,6 +344,10 @@
 
 <body>
 	<h2 style="margin: 0 0 12px;">Demo: таймер удаления</h2>
+	<svg class="timer-progress-circle" viewBox="0 0 24 24">
+		<circle class="timer-progress-bg" cx="12" cy="12" r="10"></circle>
+		<circle class="timer-progress-bar" cx="12" cy="12" r="10" style="stroke-dashoffset: 31.4159;"></circle><text class="timer-progress-text" x="12" y="16" text-anchor="middle">5</text>
+	</svg>
 	<p style="margin: 0 0 18px; opacity: 0.8;">
 		Кнопка “Запустить” вызывает <code>BX.Sale.BasketComponent.startDeleteInterval(node)</code>.
 	</p>

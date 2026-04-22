@@ -591,7 +591,6 @@
 						this.deleteBasketItems(result.MERGED_BASKET_ITEMS, false, true);
 					}
 
-
 					this.applyBasketResult(result.BASKET_DATA);
 					this.editBasketItems(this.getItemsToEdit());
 					this.editTotal(false);
@@ -648,7 +647,7 @@
 			}
 
 			if (result.BASKET_ITEM_RENDER_DATA) {
-				var i, newData, arrTmp = [];
+				var i, newData, arrTmp = [], beforeItems = this.items, newItems = {}, length = Object.keys(this.items).length;
 
 				for (i in result.BASKET_ITEM_RENDER_DATA) {
 					if (result.BASKET_ITEM_RENDER_DATA.hasOwnProperty(i)) {
@@ -672,6 +671,10 @@
 
 						newData = this.checkBasketItemsAnimation(newData);
 
+						if (!beforeItems[newData.ID]) {
+							newItems[newData.ID] = newData;
+						}
+
 						this.items[newData.ID] = newData;
 
 					}
@@ -681,6 +684,7 @@
 				for (var i in this.items) {
 
 					if (!arrTmp.includes(i)) {
+
 						if (this.items[i].IS_CAN_BUY)
 
 							this.deleteBasketItem(i, false, false);
@@ -693,6 +697,11 @@
 
 				if (this.isBasketChanged()) {
 					this.sortSortedItems(true);
+				}
+				if (length > 0 && length < Object.keys(this.items).length) {
+					for (i in newItems) {
+						this.createBasketItem(newItems[i].ID);
+					}
 				}
 			}
 
@@ -1089,29 +1098,29 @@
 
 		checkSimilar: function (itemData) {
 			if (!itemData) return;
-		
-			setTimeout(() => {
-				const table = BX(this.ids.itemListTable);
-		
-				if (itemData.ID_REAL) {
-					const footer = this.getEntity(
-						table,
-						"not-exists-footer",
-						`[data-id-real="${itemData.ID_REAL}"]`
-					);
-		
-					if (footer) {
-						footer.remove();
-					}
+
+
+			const table = BX(this.ids.itemListTable);
+			if (!table) return;
+			if (itemData.ID_REAL) {
+				const footer = this.getEntity(
+					table,
+					"not-exists-footer",
+					`[data-id-real="${itemData.ID_REAL}"]`
+				);
+
+				if (footer) {
+					footer.remove();
 				}
-		
-				const header = this.getEntity(table, "not-exists-header");
-				const items = this.getEntities(table, "basket-item", "[data-not-exists]");
-		
-				if (header && items.length === 0) {
-					header.remove();
-				}
-			}, 1000);
+			}
+
+			const header = this.getEntity(table, "not-exists-header");
+			const items = this.getEntities(table, "basket-item", "[data-not-exists]");
+
+			if (header && items.length === 0) {
+				header.remove();
+			}
+
 		},
 
 		checkIsNotCanBuy: function (item) {
@@ -2114,11 +2123,14 @@
 		bindRestoreAction: function (node, itemData) {
 			if (!node || !itemData || this.params.SHOW_RESTORE !== 'Y')
 				return;
-			this.clearDeleteInterval();
 			BX.bind(
 				this.getEntity(node, 'basket-item-restore-button'),
 				'click',
 				BX.delegate(function () {
+					var timerId = node && node.dataset ? node.dataset.timerId : null;
+					if (timerId) {
+						this.clearDeleteInterval(timerId);
+					}
 					this.actionPool.restoreItem(itemData.ID, {
 						PRODUCT_ID: itemData.PRODUCT_ID,
 						QUANTITY: itemData.QUANTITY,
@@ -2143,54 +2155,80 @@
 		},
 
 		startDeleteInterval: function (node) {
-			console.log('node', node)
-			this.deleteDelay = setTimeout(
-				BX.delegate(function () {
-					var prevTimerId = node && node.dataset ? node.dataset.timerId : null;
-					if (prevTimerId && this.deleteTimer && this.deleteTimer[prevTimerId]) {
-						clearInterval(this.deleteTimer[prevTimerId]);
-						delete this.deleteTimer[prevTimerId];
+			if (!node) {
+				return;
+			}
+			this.deleteDelay = null;
+			BX.delegate(function () {
+				var prevTimerId = node && node.dataset ? node.dataset.timerId : null;
+
+				if (prevTimerId && this.deleteTimer && this.deleteTimer[prevTimerId]) {
+					return;
+				}
+
+				var timerId = prevTimerId || ('timer_' + Date.now() + '_' + Math.random());
+				var $timerValue = node.querySelector ? node.querySelector('[data-table-item-timer]') : null;
+				var $progressCircle = node.querySelector ? node.querySelector('.timer-progress-circle') : null;
+				var totalSeconds = 10;
+				var radius = 10;
+				var circumference = 2 * Math.PI * radius; // 62.83
+				var secondsLeft = totalSeconds;
+
+				if (!$timerValue) {
+					return;
+				}
+
+				if (!$progressCircle) {
+					$timerValue.innerHTML = '<svg class="timer-progress-circle" viewBox="0 0 24 24"><circle class="timer-progress-bg" cx="12" cy="12" r="10"></circle><circle class="timer-progress-bar" style="stroke-dashoffset: ' + circumference + ';" cx="12" cy="12" r="10"></circle><text class="timer-progress-text" data-timer-counter x="12" y="16" text-anchor="middle">10</text></svg>';
+				}
+
+				var $progressBar = $timerValue.querySelector ? $timerValue.querySelector('.timer-progress-bar') : null;
+				var $progressText = $timerValue.querySelector ? $timerValue.querySelector('.timer-progress-text') : null;
+				
+				if (!$progressBar || !$progressText) {
+					return;
+				}
+
+				var getRowToRemove = () => {
+					if (!node || !node.closest) {
+						return node;
 					}
+					return node.closest('.new-cart-table-item-deleterow')
+						|| node.closest('[data-entity="basket-item"]')
+						|| node.closest('.new-cart-table-item-row')
+						|| node;
+				};
 
-					var timerId = 'timer_' + Date.now() + '_' + Math.random();
-					var secondsLeft = 10;
-					var $timerValue = node.querySelector('[data-table-item-timer]');
-					var $progressCircle = node.querySelector('.timer-progress-circle');
-
-					if (!$timerValue) {
+				var updateTimer = () => {
+					if (!node || (node.isConnected === false)) {
+						this.clearDeleteInterval(timerId);
 						return;
 					}
+					var progress = (totalSeconds - secondsLeft) / totalSeconds;
+					var offset = circumference * (1 - progress);
 
-					if (!$progressCircle) {
-						$timerValue.innerHTML = '<svg class="timer-progress-circle" viewBox="0 0 24 24"><circle class="timer-progress-bg" cx="12" cy="12" r="10"></circle><circle class="timer-progress-bar" cx="12" cy="12" r="10"></circle><text class="timer-progress-text" data-timer-counter x="12" y="16" text-anchor="middle">' + secondsLeft + '</text></svg>';
-					}
+					$progressBar.style.strokeDashoffset = offset;
+					$progressText.innerHTML = secondsLeft;
 
-					var updateTimer = () => {
-						var circumference = 2 * Math.PI * 10; // 62.83
-						var progress = (10 - secondsLeft) / 10;
-						var offset = circumference * (1 - progress);
-
-						$timerValue.querySelector('.timer-progress-bar').style.strokeDashoffset = offset;
-						$timerValue.querySelector('.timer-progress-text').innerHTML = secondsLeft;
-
-						if (secondsLeft <= 0) {
-							clearInterval(this.deleteTimer[timerId]);
-							delete this.deleteTimer[timerId];
-							if (node && node.dataset && node.dataset.timerId === timerId) {
-								delete node.dataset.timerId;
-							}
-							node.remove()
-
-							return;
+					if (secondsLeft <= 0) {
+						this.clearDeleteInterval(timerId);
+						if (node && node.dataset && node.dataset.timerId === timerId) {
+							delete node.dataset.timerId;
 						}
-						secondsLeft--;
-					};
-					updateTimer();
-					this.deleteTimer[timerId] = setInterval(updateTimer, 1000);
-					node.dataset.timerId = timerId;
-				}, this),
-				300
-			);
+						var rowToRemove = getRowToRemove();
+
+						if (rowToRemove && rowToRemove.remove) {
+							rowToRemove.remove();
+						}
+
+						return;
+					}
+					secondsLeft--;
+				};
+				updateTimer();
+				this.deleteTimer[timerId] = setInterval(updateTimer, 1000);
+				node.dataset.timerId = timerId;
+			}, this)();
 		},
 
 		clearDeleteInterval: function (timerId) {
@@ -2361,65 +2399,61 @@
 			var basketItemTemplate = this.getTemplate('basket-string-high-template');
 			if (basketItemTemplate) {
 				var basketItemHtml = this.renderBasketItem(basketItemTemplate, this.items[itemId]);
-				if(BX(this.ids.item + itemId)) {
-					BX(this.ids.item + itemId).insertAdjacentHTML('afterend', basketItemHtml);					
+				if (BX(this.ids.item + itemId)) {
+					BX(this.ids.item + itemId).insertAdjacentHTML('afterend', basketItemHtml);
 					this.bindStringHighEvents(itemId);
 				}
 			}
 		},
-		bindStringHighEvents:  function (itemId) {
+		bindStringHighEvents: function (itemId) {
 			let sh = BX("basket-string-" + itemId);
-			if(!sh)
+			if (!sh)
 				return;
-			
+
 			BX.bind(sh.querySelector("[data-high-hide]"), 'click', BX.proxy(this.highHide, this));
 			BX.bind(sh.querySelector("[data-high-add]"), 'click', BX.proxy(this.highAdd, this));
 		},
 		highAdd: function () {
-			let itemData = BX.proxy_context, 
-			data = {
-				"ajax_basket": "Y",
-				"product_id":"",
-				"action":"add",
-				"string_id":itemData.closest('[data-entity="basket-item-string-high"]').dataset.string,
-				"string_high":itemData.closest('[data-entity="basket-item-string-high"]').dataset.stringHigh,
-				"quantity":"",
-				"basket_props":"",
-				"prop[]":0,
-			};
-			console.log(data);
-							/*
-ajax_basket=Y
-&product_id=14773
-4&action=add
-&string_id=118468
-&string_high=133366
-&quantity=1
-&basket_props=YToxOntpOjA7czoyMjoiUFJPUF9FWExfUkFaTUVSX1JVQ0hLSSI7fQ%3D%3D
-&prop%5B%5D=0
-
-							 ajax_basket
-Y
-product_id
-147734
-action
-add
-string_id
-118468
-string_high
-133366
-quantity
-1
-basket_props
-YToxOntpOjA7czoyMjoiUFJPUF9FWExfUkFaTUVSX1JVQ0hLSSI7fQ==
-prop[]
-0
-							  */	
+			let itemData = BX.proxy_context,
+				action = '/ajax/add2basketNew.php',
+				data = {
+					"ajax_basket": "Y",
+					"product_id": itemData.closest('[data-entity="basket-item-string-high"]').dataset.highParent,
+					"product_basket_id": itemData.closest('[data-entity="basket-item-string-high"]').dataset.highParentBasketId,
+					"action": "add",
+					"string_id": itemData.closest('[data-entity="basket-item-string-high"]').dataset.string,
+					"string_high": itemData.closest('[data-entity="basket-item-string-high"]').dataset.stringHigh,
+					"quantity": itemData.closest('[data-entity="basket-item-string-high"]').dataset.highParentQuantity,
+					"basket_props": itemData.closest('[data-entity="basket-item-string-high"]').dataset.highParentSku_props,
+					"prop[]": 0,
+				};
+			BX.ajax({
+				url: action,
+				data: data,
+				method: 'POST',
+				dataType: 'json',
+				timeout: 30,
+				async: true,
+				processData: true,
+				scriptsRunFirst: true,
+				emulateOnload: true,
+				start: true,
+				cache: false,
+				onsuccess: BX.delegate(function (result) {
+					this.sendRequest('refreshAjax', {
+						fullRecalculation: 'Y'
+					});
+					itemData.closest('[data-entity="basket-item-string-high"]').remove();
+				}, this),
+				onfailure: BX.delegate(function () {
+					this.actionPool.doProcessing(false);
+				}, this)
+			});
 		},
 		highHide: function () {
 			let itemData = BX.proxy_context;
-			if (itemData) 
-				itemData.closest('[data-entity="basket-item-string-high"]').style.display = 'none';						
+			if (itemData)
+				itemData.closest('[data-entity="basket-item-string-high"]').style.display = 'none';
 		},
 	};
 })();
