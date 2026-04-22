@@ -655,7 +655,7 @@
 
 						newData.WARNINGS = this.checkBasketItemWarnings(newData, result.WARNING_MESSAGE_WITH_CODE);
 
-						arrTmp.push(newData.ID);
+						arrTmp.push(String(newData.ID));
 
 						if (this.items[newData.ID]) {
 
@@ -682,15 +682,15 @@
 				}
 
 				for (var i in this.items) {
-
 					if (!arrTmp.includes(i)) {
 
-						if (this.items[i].IS_CAN_BUY)
-
+						if (this.items[i] && this.items[i].SHOW_RESTORE) {
+							continue;
+						}
+						if (this.items[i] && this.items[i].IS_CAN_BUY) {
 							this.deleteBasketItem(i, false, false);
-
+						}
 					}
-
 				}
 
 				this.changedItems = BX.util.array_unique(this.changedItems.concat(this.getChangedSimilarOffers()));
@@ -1432,6 +1432,12 @@
 
 		deleteBasketItem: function (itemId, restore, final) {
 
+			if (!this.items || !this.items[itemId]) {
+				BX.remove(BX(this.ids.item + itemId));
+				BX.remove(BX(this.ids.itemHeightAligner + itemId));
+				return;
+			}
+
 			if (this.items[itemId].NOT_AVAILABLE && restore) {
 				restore = false;
 				final = true;
@@ -1552,14 +1558,15 @@
 
 		redrawBasketItemNode: function (itemId) {
 			var basketItemNode = BX(this.ids.item + itemId);
+			var nodeAligner = BX(this.ids.itemHeightAligner + itemId);
+			var nodeToReplace = BX.type.isDomNode(basketItemNode) ? basketItemNode : nodeAligner;
 
-			if (!this.items[itemId] || !BX.type.isDomNode(basketItemNode))
+			if (!this.items[itemId] || !BX.type.isDomNode(nodeToReplace))
 				return;
 
 			var basketItemTemplate = this.getTemplate('basket-item-template');
 			if (basketItemTemplate) {
-				var nodeAligner = BX(this.ids.itemHeightAligner + itemId),
-					oldHeight;
+				var oldHeight;
 
 				if (BX.type.isDomNode(nodeAligner)) {
 					oldHeight = nodeAligner.clientHeight;
@@ -1567,11 +1574,11 @@
 
 				var basketItemHtml = this.renderBasketItem(basketItemTemplate, this.items[itemId]);
 
-				basketItemNode.insertAdjacentHTML('beforebegin', basketItemHtml);
+				nodeToReplace.insertAdjacentHTML('beforebegin', basketItemHtml);
 
 
 				this.startDeleteInterval(BX(this.ids.itemHeightAligner + itemId));
-				BX.remove(basketItemNode);
+				BX.remove(nodeToReplace);
 
 
 				if (oldHeight) {
@@ -2218,11 +2225,11 @@
 						if (node && node.dataset && node.dataset.timerId === timerId) {
 							delete node.dataset.timerId;
 						}
-						// var rowToRemove = getRowToRemove();
+						var rowToRemove = getRowToRemove();
 
-						// if (rowToRemove && rowToRemove.remove) {
-						// 	rowToRemove.remove();
-						// }
+						if (rowToRemove && rowToRemove.remove) {
+							rowToRemove.remove();
+						}
 
 						return;
 					}
