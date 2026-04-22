@@ -1431,7 +1431,7 @@
 		},
 
 		deleteBasketItem: function (itemId, restore, final) {
-			// delete not available item with no chance to restore
+
 			if (this.items[itemId].NOT_AVAILABLE && restore) {
 				restore = false;
 				final = true;
@@ -1445,6 +1445,9 @@
 			else {
 				this.changeShownItem(itemId);
 				BX.remove(BX(this.ids.item + itemId));
+				if (final) {
+					BX.remove(BX(this.ids.itemHeightAligner + itemId));
+				}
 				delete this.items[itemId];
 			}
 
@@ -1615,10 +1618,9 @@
 		},
 
 		bindBasketItemEvents: function (itemData) {
-			if (!itemData)
-				return;
-
+			if (!itemData) return;
 			var itemNode = BX(this.ids.item + itemData.ID);
+
 			if (BX.type.isDomNode(itemNode)) {
 				this.bindQuantityEvents(itemNode, itemData);
 				this.bindSkuEvents(itemNode, itemData);
@@ -1626,21 +1628,14 @@
 				this.bindActionEvents(itemNode, itemData);
 				this.bindRestoreAction(itemNode, itemData);
 				this.bindItemWarningEvents(itemNode, itemData);
+				return;
 			}
 
 			var restoreNode = BX(this.ids.itemHeightAligner + itemData.ID);
 			if (BX.type.isDomNode(restoreNode)) {
 				this.bindRestoreAction(restoreNode, itemData);
 			}
-			/*if (BX.type.isDomNode(BX(this.ids.itemHeightAligner + itemData.ID)))
-				BX.bind(BX(this.ids.itemHeightAligner + itemData.ID), 'click', BX.proxy(this.startDeleteInterval, this));
-			console.log([
-				this.ids.itemHeightAligner + itemData.ID,
-				BX(this.ids.itemHeightAligner + itemData.ID),
-				BX.type.isDomNode(BX(this.ids.itemHeightAligner + itemData.ID))
-			]);*/
 		},
-
 
 		bindQuantityEvents: function (node, data) {
 			if (!node || !data || !this.isItemAvailable(data.ID))
@@ -2145,6 +2140,9 @@
 						PRODUCT_PROVIDER_CLASS: itemData.PRODUCT_PROVIDER_CLASS
 					});
 
+					if (!this.items || !this.items[itemData.ID]) {
+						return;
+					}
 					this.items[itemData.ID].SHOW_RESTORE = false;
 					this.items[itemData.ID].SHOW_LOADING = true;
 					this.redrawBasketItemNode(itemData.ID);
