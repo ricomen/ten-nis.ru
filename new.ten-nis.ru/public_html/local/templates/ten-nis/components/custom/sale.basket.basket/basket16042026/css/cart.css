@@ -204,7 +204,8 @@
 
 }
 .cart-table__size .catalog__filter-block {
-    width: 85px;
+    max-width: 85px;
+    width: 100%;
 }
 .cart-table__size .catalog__filter-block-head {
     padding-left: 10px;

@@ -653,12 +653,9 @@
 					if (result.BASKET_ITEM_RENDER_DATA.hasOwnProperty(i)) {
 						newData = result.BASKET_ITEM_RENDER_DATA[i];
 
-						// Mustache helper flag: render sales container only when non-empty
-						newData.HAS_SALES = Array.isArray(newData.SALES_LIST) && newData.SALES_LIST.length > 0;
-
 						newData.WARNINGS = this.checkBasketItemWarnings(newData, result.WARNING_MESSAGE_WITH_CODE);
 
-						arrTmp.push(String(newData.ID));
+						arrTmp.push(newData.ID);
 
 						if (this.items[newData.ID]) {
 
@@ -685,15 +682,15 @@
 				}
 
 				for (var i in this.items) {
+
 					if (!arrTmp.includes(i)) {
 
-						if (this.items[i] && this.items[i].SHOW_RESTORE) {
-							continue;
-						}
-						if (this.items[i] && this.items[i].IS_CAN_BUY) {
+						if (this.items[i].IS_CAN_BUY)
+
 							this.deleteBasketItem(i, false, false);
-						}
+
 					}
+
 				}
 
 				this.changedItems = BX.util.array_unique(this.changedItems.concat(this.getChangedSimilarOffers()));
@@ -1434,13 +1431,7 @@
 		},
 
 		deleteBasketItem: function (itemId, restore, final) {
-
-			if (!this.items || !this.items[itemId]) {
-				BX.remove(BX(this.ids.item + itemId));
-				BX.remove(BX(this.ids.itemHeightAligner + itemId));
-				return;
-			}
-
+			// delete not available item with no chance to restore
 			if (this.items[itemId].NOT_AVAILABLE && restore) {
 				restore = false;
 				final = true;
@@ -1454,9 +1445,6 @@
 			else {
 				this.changeShownItem(itemId);
 				BX.remove(BX(this.ids.item + itemId));
-				if (final) {
-					BX.remove(BX(this.ids.itemHeightAligner + itemId));
-				}
 				delete this.items[itemId];
 			}
 
@@ -1561,15 +1549,14 @@
 
 		redrawBasketItemNode: function (itemId) {
 			var basketItemNode = BX(this.ids.item + itemId);
-			var nodeAligner = BX(this.ids.itemHeightAligner + itemId);
-			var nodeToReplace = BX.type.isDomNode(basketItemNode) ? basketItemNode : nodeAligner;
 
-			if (!this.items[itemId] || !BX.type.isDomNode(nodeToReplace))
+			if (!this.items[itemId] || !BX.type.isDomNode(basketItemNode))
 				return;
 
 			var basketItemTemplate = this.getTemplate('basket-item-template');
 			if (basketItemTemplate) {
-				var oldHeight;
+				var nodeAligner = BX(this.ids.itemHeightAligner + itemId),
+					oldHeight;
 
 				if (BX.type.isDomNode(nodeAligner)) {
 					oldHeight = nodeAligner.clientHeight;
@@ -1577,11 +1564,11 @@
 
 				var basketItemHtml = this.renderBasketItem(basketItemTemplate, this.items[itemId]);
 
-				nodeToReplace.insertAdjacentHTML('beforebegin', basketItemHtml);
+				basketItemNode.insertAdjacentHTML('beforebegin', basketItemHtml);
 
 
 				this.startDeleteInterval(BX(this.ids.itemHeightAligner + itemId));
-				BX.remove(nodeToReplace);
+				BX.remove(basketItemNode);
 
 
 				if (oldHeight) {
@@ -1628,9 +1615,10 @@
 		},
 
 		bindBasketItemEvents: function (itemData) {
-			if (!itemData) return;
-			var itemNode = BX(this.ids.item + itemData.ID);
+			if (!itemData)
+				return;
 
+			var itemNode = BX(this.ids.item + itemData.ID);
 			if (BX.type.isDomNode(itemNode)) {
 				this.bindQuantityEvents(itemNode, itemData);
 				this.bindSkuEvents(itemNode, itemData);
@@ -1638,14 +1626,16 @@
 				this.bindActionEvents(itemNode, itemData);
 				this.bindRestoreAction(itemNode, itemData);
 				this.bindItemWarningEvents(itemNode, itemData);
-				return;
 			}
-
-			var restoreNode = BX(this.ids.itemHeightAligner + itemData.ID);
-			if (BX.type.isDomNode(restoreNode)) {
-				this.bindRestoreAction(restoreNode, itemData);
-			}
+			/*if (BX.type.isDomNode(BX(this.ids.itemHeightAligner + itemData.ID)))
+				BX.bind(BX(this.ids.itemHeightAligner + itemData.ID), 'click', BX.proxy(this.startDeleteInterval, this));
+			console.log([
+				this.ids.itemHeightAligner + itemData.ID,
+				BX(this.ids.itemHeightAligner + itemData.ID),
+				BX.type.isDomNode(BX(this.ids.itemHeightAligner + itemData.ID))
+			]);*/
 		},
+
 
 		bindQuantityEvents: function (node, data) {
 			if (!node || !data || !this.isItemAvailable(data.ID))
@@ -2150,9 +2140,6 @@
 						PRODUCT_PROVIDER_CLASS: itemData.PRODUCT_PROVIDER_CLASS
 					});
 
-					if (!this.items || !this.items[itemData.ID]) {
-						return;
-					}
 					this.items[itemData.ID].SHOW_RESTORE = false;
 					this.items[itemData.ID].SHOW_LOADING = true;
 					this.redrawBasketItemNode(itemData.ID);
@@ -2228,11 +2215,11 @@
 						if (node && node.dataset && node.dataset.timerId === timerId) {
 							delete node.dataset.timerId;
 						}
-						var rowToRemove = getRowToRemove();
+						// var rowToRemove = getRowToRemove();
 
-						if (rowToRemove && rowToRemove.remove) {
-							rowToRemove.remove();
-						}
+						// if (rowToRemove && rowToRemove.remove) {
+						// 	rowToRemove.remove();
+						// }
 
 						return;
 					}
