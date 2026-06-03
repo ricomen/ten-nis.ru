@@ -149,7 +149,6 @@
 			this.bindWarningEvents();
 			this.bindActionSelector();
 			this.bindActionShare();
-			// this.isMobileDevice = this.isMobileCheck();
 
 			BX.bind(window, 'scroll', BX.proxy(this.checkStickyHeaders, this));
 			BX.bind(window, 'scroll', BX.proxy(this.lazyLoad, this));
@@ -163,26 +162,15 @@
 				BX.bind(entities[i], 'click', BX.proxy(this.clickActionSelector, this));
 			}
 		},
+
 		bindActionShare: function () {
 			var entities = this.getEntities(BX(this.ids.basketRoot), 'data-share');
-			console.log('entities: ', entities);
+
 			for (var i = 0; i < entities.length; i++) {
 				BX.bind(entities[i], 'click', BX.proxy(this.clickActionShare, this));
 			}
 		},
-		// bindActionShare: function () {
-		// 	var root = BX(this.ids.basketRoot);
-		// 	if (!root || root.dataset.shareBound === '1') return;
-		// 	root.dataset.shareBound = '1';
-		// 	BX.bind(root, 'click', BX.proxy(function (e) {
-		// 		var target = BX.getEventTarget(e);
-		// 		var shareBtn = target && target.closest
-		// 			? target.closest('[data-entity="data-share"]')
-		// 			: null;
-		// 		if (!shareBtn) return;
-		// 		this.clickActionShare(e);
-		// 	}, this));
-		// },
+
 		getCookie: function(name)
 		{
 			var matches = document.cookie.match(new RegExp(
@@ -211,6 +199,7 @@
 				navigator.clipboard.writeText(repostUrl);
 			}
 		},
+		
 		clickActionShare: function (event) {
 			var text = "";
 			var target = BX.getEventTarget(event).closest('a');
@@ -240,12 +229,8 @@
 				const telegramShareUrl = this.buildTelegramShareUrl(repostUrl, text);	
 				window.open(telegramShareUrl, '_blank');
 			}
-			console.log([
-				target,
-				action,
-				entities
-			]);
 		},
+
 		buildTelegramShareUrl: function (url, text) {
             const encodedUrl = encodeURIComponent(window.location.origin + url);
             const encodedText = text ? encodeURIComponent(text) : '';
