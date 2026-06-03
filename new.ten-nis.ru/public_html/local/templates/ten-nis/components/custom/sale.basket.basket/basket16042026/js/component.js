@@ -37,7 +37,7 @@
 			this.templates = {};
 			this.nodes = {};
 			this.shares = {};
-			this.isMobileDevice = false;
+			// this.isMobileDevice = false;
 
 			/** Object of all basket items (itemId => itemArray) */
 			this.items = {};
@@ -149,7 +149,7 @@
 			this.bindWarningEvents();
 			this.bindActionSelector();
 			this.bindActionShare();
-			this.isMobileDevice = this.isMobileCheck();
+			// this.isMobileDevice = this.isMobileCheck();
 
 			BX.bind(window, 'scroll', BX.proxy(this.checkStickyHeaders, this));
 			BX.bind(window, 'scroll', BX.proxy(this.lazyLoad, this));
@@ -183,9 +183,9 @@
 			});
 			return `${window.location.pathname}repost/${params.length ? '?' + params.join('&') : ''}`;
 		},
-		isMobileCheck: function () {
-			return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-		},
+		// isMobileCheck: function () {
+		// 	return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+		// },
 		clickActionShare: function (event) {
 			var text = "", target = BX.getEventTarget(event).closest('a'),
 			entities = this.getEntities(BX(this.ids.itemListTable), 'basket-item-checkbox'),
@@ -218,7 +218,9 @@
             const encodedUrl = encodeURIComponent(window.location.origin + url);
             const encodedText = text ? encodeURIComponent(text) : '';
             let shareUrl = `tg://msg_url?url=${encodedUrl}`;
-			if (!this.isMobileDevice)
+			// if (!this.isMobileDevice)
+			// 	shareUrl = `https://t.me/share/url?url=${encodedUrl}`;
+			if (!this.isMobile)
 				shareUrl = `https://t.me/share/url?url=${encodedUrl}`;
             if (encodedText) 
                 shareUrl += `&text=${encodedText}`;            
@@ -228,7 +230,9 @@
             const encodedUrl = encodeURIComponent(window.location.origin + url);
             const encodedText = text ? encodeURIComponent(text) : '';
             let shareUrl = `https://max.ru/:share?text=${encodedUrl}`;
-			if (!this.isMobileDevice)
+			// if (!this.isMobileDevice)
+			// 	shareUrl = `https://max.ru/:share?text=${encodedUrl}`;
+			if (!this.isMobile)
 				shareUrl = `https://max.ru/:share?text=${encodedUrl}`;
             if (encodedText) 
                 shareUrl += `&text=${encodedText}`;            
