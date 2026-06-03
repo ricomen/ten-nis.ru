@@ -6389,8 +6389,10 @@
      overflow: hidden;
      opacity: 0;
  }
+ .catalog__filter-block-body:not(.select-active) {
+    pointer-events: none;
+ }
  .select-active .catalog__filter-block-body {
-     padding: 0px 15px 0 15px;
      height: auto;
      opacity: 1;
      margin-top: 20px;
