@@ -163,11 +163,24 @@
 				BX.bind(entities[i], 'click', BX.proxy(this.clickActionSelector, this));
 			}
 		},
+		// bindActionShare: function () {
+		// 	var entities = this.getEntities(BX(this.ids.basketRoot), 'data-share');
+		// 	for (var i = 0; i < entities.length; i++) {
+		// 		BX.bind(entities[i], 'click', BX.proxy(this.clickActionShare, this));
+		// 	}
+		// },
 		bindActionShare: function () {
-			var entities = this.getEntities(BX(this.ids.basketRoot), 'data-share');
-			for (var i = 0; i < entities.length; i++) {
-				BX.bind(entities[i], 'click', BX.proxy(this.clickActionShare, this));
-			}
+			var root = BX(this.ids.basketRoot);
+			if (!root || root.dataset.shareBound === '1') return;
+			root.dataset.shareBound = '1';
+			BX.bind(root, 'click', BX.proxy(function (e) {
+				var target = BX.getEventTarget(e);
+				var shareBtn = target && target.closest
+					? target.closest('[data-entity="data-share"]')
+					: null;
+				if (!shareBtn) return;
+				this.clickActionShare(e);
+			}, this));
 		},
 		getCookie: function(name)
 		{
