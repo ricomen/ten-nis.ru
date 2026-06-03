@@ -161,7 +161,7 @@
 .new-cart-top__right a[data-tip]::before {
 	content: "";
 	position: absolute;
-	bottom: calc(100% + 3px);
+	bottom: calc(100% - 2px);
 	left: 50%;
 	transform: translateX(-50%) translateY(4px);
 	border: 5px solid transparent;

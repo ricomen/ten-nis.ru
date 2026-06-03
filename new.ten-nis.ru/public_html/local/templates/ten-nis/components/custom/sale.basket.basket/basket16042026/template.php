@@ -18,6 +18,8 @@ $this->addExternalJs($templateFolder . '/js/action-pool.js');
 $this->addExternalJs($templateFolder . '/js/filter.js');
 $this->addExternalJs($templateFolder . '/js/component.js');
 
+$this->addExternalCss($templateFolder . '/css/cart_24042026.css');
+
 $mobileColumns = isset($arParams['COLUMNS_LIST_MOBILE'])
 	? $arParams['COLUMNS_LIST_MOBILE']
 	: $arParams['COLUMNS_LIST'];
