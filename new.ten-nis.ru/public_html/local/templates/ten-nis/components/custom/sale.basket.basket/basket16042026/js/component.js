@@ -180,10 +180,11 @@
 			return matches ? decodeURIComponent(matches[1]) : null;
 		},
 		buildRepostUrl: function (data) {
-			const params = Object.entries(data).map(([key, value]) => {
-				return `products[${encodeURIComponent(key)}]=${encodeURIComponent(value)}`;
+			var url = new URL('repost/', window.location.href);
+			Object.entries(data).forEach(function ([key, value]) {
+				url.searchParams.append('products[' + key + ']', value);
 			});
-			return `${window.location.pathname}repost/${params.length ? '?' + params.join('&') : ''}`;
+			return url.toString();
 		},
 		shareRepostUrl: function (repostUrl) {
 			if (!repostUrl)
@@ -194,8 +195,8 @@
 					title: 'ten-nis.ru',
 					text: 'Поделиться корзиной',
 					url: repostUrl
-				});
-			} else {
+				}).catch(function () {});
+			} else if (navigator.clipboard && navigator.clipboard.writeText) {
 				navigator.clipboard.writeText(repostUrl);
 			}
 		},
@@ -232,27 +233,19 @@
 		},
 
 		buildTelegramShareUrl: function (url, text) {
-            const encodedUrl = encodeURIComponent(window.location.origin + url);
-            const encodedText = text ? encodeURIComponent(text) : '';
-            let shareUrl = `tg://msg_url?url=${encodedUrl}`;
-
-			if (!this.isMobile)
-				shareUrl = `https://t.me/share/url?url=${encodedUrl}`;
-            if (encodedText) 
-                shareUrl += `&text=${encodedText}`;            
-            return shareUrl;
-        },
+			var encodedUrl = encodeURIComponent(url);
+			var base = this.isMobile ? 'tg://msg_url' : 'https://t.me/share/url';
+			var shareUrl = base + '?url=' + encodedUrl;
+			if (text)
+				shareUrl += '&text=' + encodeURIComponent(text);
+			return shareUrl;
+		},
 		buildMaxShareUrl: function (url, text) {
-            const encodedUrl = encodeURIComponent(window.location.origin + url);
-            const encodedText = text ? encodeURIComponent(text) : '';
-            let shareUrl = `https://max.ru/:share?text=${encodedUrl}`;
-
-			if (!this.isMobile)
-				shareUrl = `https://max.ru/:share?text=${encodedUrl}`;
-            if (encodedText) 
-                shareUrl += `&text=${encodedText}`;            
-            return shareUrl;
-        },
+			var shareUrl = 'https://max.ru/:share?text=' + encodeURIComponent(url);
+			if (text)
+				shareUrl += '&text=' + encodeURIComponent(text);
+			return shareUrl;
+		},
 		clickActionSelector: function (event) {
 			var target = BX.getEventTarget(event),
 			entities = this.getEntities(BX(this.ids.itemListTable), 'basket-item-checkbox', '', ':checked'),
