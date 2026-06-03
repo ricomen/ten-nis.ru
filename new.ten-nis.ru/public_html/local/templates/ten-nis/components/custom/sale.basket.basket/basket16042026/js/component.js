@@ -23,6 +23,7 @@
 			itemHeightAligner: 'basket-item-height-aligner-',
 			total: 'basket-total-price',
 			basketRoot: 'basket-root',
+			actionSelector: 'action-selector',
 			itemListWrapper: 'basket-items-list-wrapper',
 			itemListContainer: 'basket-items-list-container',
 			itemList: 'basket-item-list',
@@ -35,6 +36,8 @@
 		initializePrimaryFields: function () {
 			this.templates = {};
 			this.nodes = {};
+			this.shares = {};
+			this.isMobileDevice = false;
 
 			/** Object of all basket items (itemId => itemArray) */
 			this.items = {};
@@ -105,7 +108,6 @@
 			this.getCacheNode(this.ids.basketRoot).style.opacity = 1;
 
 			this.bindInitialEvents();
-			console.log(this);
 		},
 
 		getTemplate: function (templateName) {
@@ -134,22 +136,143 @@
 			return parent.querySelector(additionalFilter + '[data-entity="' + entity + '"]');
 		},
 
-		getEntities: function (parent, entity, additionalFilter) {
+		getEntities: function (parent, entity, additionalFilter,pseudo='') {
 			if (!parent || !entity)
 				return { length: 0 };
 
 			additionalFilter = additionalFilter || '';
 
-			return parent.querySelectorAll(additionalFilter + '[data-entity="' + entity + '"]');
+			return parent.querySelectorAll(additionalFilter + '[data-entity="' + entity + '"]' + pseudo);
 		},
 
 		bindInitialEvents: function () {
 			this.bindWarningEvents();
+			this.bindActionSelector();
+			this.bindActionShare();
+			this.isMobileDevice = this.isMobileCheck();
 
 			BX.bind(window, 'scroll', BX.proxy(this.checkStickyHeaders, this));
 			BX.bind(window, 'scroll', BX.proxy(this.lazyLoad, this));
 
 			BX.bind(window, 'resize', BX.throttle(this.checkStickyHeaders, 20, this));
+		},
+
+		bindActionSelector: function () {
+			var entities = this.getEntities(BX(this.ids.actionSelector), 'change-selector-radio');
+			for (var i = 0; i < entities.length; i++) {
+				BX.bind(entities[i], 'click', BX.proxy(this.clickActionSelector, this));
+			}
+		},
+		bindActionShare: function () {
+			var entities = this.getEntities(BX(this.ids.basketRoot), 'data-share');
+			for (var i = 0; i < entities.length; i++) {
+				BX.bind(entities[i], 'click', BX.proxy(this.clickActionShare, this));
+			}
+		},
+		getCookie: function(name)
+		{
+			var matches = document.cookie.match(new RegExp(
+				"(?:^|; )" + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1') + "=([^;]*)"
+			));
+
+			return matches ? decodeURIComponent(matches[1]) : null;
+		},
+		buildRepostUrl: function (data) {
+			const params = Object.entries(data).map(([key, value]) => {
+				return `products[${encodeURIComponent(key)}]=${encodeURIComponent(value)}`;
+			});
+			return `${window.location.pathname}repost/${params.length ? '?' + params.join('&') : ''}`;
+		},
+		isMobileCheck: function () {
+			return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+		},
+		clickActionShare: function (event) {
+			var text = "", target = BX.getEventTarget(event).closest('a'),
+			entities = this.getEntities(BX(this.ids.itemListTable), 'basket-item-checkbox'),
+			action = target.dataset?.share||"", shares = {}, repostUrl = '';
+			for (var i = 0; i < entities.length; i++) {
+				let row = entities[i].closest('[data-id-real]'),  idReal = row?.dataset?.idReal,  productId = row?.dataset?.product_id;
+				shares[idReal] = (idReal != productId ? productId : "");				
+			}
+			if(Object.keys(shares).length <= 0)
+				return;
+			repostUrl = this.buildRepostUrl(shares);
+			if(!repostUrl)
+				return;
+			if(action == "url") {
+				// if pc = to clipboard, else default share apps
+			} else if(action == "max") {
+				const telegramShareUrl = this.buildMaxShareUrl(repostUrl, text);	
+				window.open(telegramShareUrl, '_blank');
+			} else if(action == "tg") {	
+				const telegramShareUrl = this.buildTelegramShareUrl(repostUrl, text);	
+				window.open(telegramShareUrl, '_blank');
+			}
+			console.log([
+				target,
+				action,
+				entities
+			]);
+		},
+		buildTelegramShareUrl: function (url, text) {
+            const encodedUrl = encodeURIComponent(window.location.origin + url);
+            const encodedText = text ? encodeURIComponent(text) : '';
+            let shareUrl = `tg://msg_url?url=${encodedUrl}`;
+			if (!this.isMobileDevice)
+				shareUrl = `https://t.me/share/url?url=${encodedUrl}`;
+            if (encodedText) 
+                shareUrl += `&text=${encodedText}`;            
+            return shareUrl;
+        },
+		buildMaxShareUrl: function (url, text) {
+            const encodedUrl = encodeURIComponent(window.location.origin + url);
+            const encodedText = text ? encodeURIComponent(text) : '';
+            let shareUrl = `https://max.ru/:share?text=${encodedUrl}`;
+			if (!this.isMobileDevice)
+				shareUrl = `https://max.ru/:share?text=${encodedUrl}`;
+            if (encodedText) 
+                shareUrl += `&text=${encodedText}`;            
+            return shareUrl;
+        },
+		clickActionSelector: function (event) {
+			var target = BX.getEventTarget(event),
+			entities = this.getEntities(BX(this.ids.itemListTable), 'basket-item-checkbox', '', ':checked'),
+			action = target.dataset?.value||"";
+			if(action == "share")
+				this.shares = {};
+			for (var i = 0; i < entities.length; i++) {
+				let row = entities[i].closest('[data-id-real]'),  idReal = row?.dataset?.idReal,  productId = row?.dataset?.product_id;
+				if(action == "wishlist") {
+					if(idReal){
+						if(ym)
+							ym(46201080,'reachGoal','click_favorite');
+						if (document.cookie.includes('favorites')) {
+							var favoritesIds = this.getCookie('favorites');
+							favoritesIds = JSON.parse(favoritesIds);
+							if (!favoritesIds.includes(idReal.toString())) {
+								favoritesIds.push(idReal.toString());
+								var favoritesIdsJson = JSON.stringify(favoritesIds);
+								document.cookie = 'favorites=' + favoritesIdsJson + '; max-age=864000; path=/';
+							}
+						} else {
+							var favoritesIds = [idReal.toString()];
+							var favoritesIdsJson = JSON.stringify(favoritesIds);
+							document.cookie = 'favorites=' + favoritesIdsJson + '; max-age=864000; path=/';
+						}					
+					}
+				} else if(action == "share") {
+					this.shares[idReal] = (idReal != productId ? productId : "");
+				} else if(action == "remove") {
+					row.querySelector('[data-entity="basket-item-delete"]').click();	
+				}	
+				row.querySelector('[data-entity="basket-item-checkbox"]').checked = false;			
+			}
+			if(action == "wishlist") {
+				this.setWishlistHeader(favoritesIds);
+			} else if(action == "share" && Object.keys(this.shares).length > 0) {
+				window.repostUrl = this.buildRepostUrl(this.shares);
+				// if pc = to clipboard, else default share apps
+			}			
 		},
 
 		bindWarningEvents: function () {
@@ -580,6 +703,8 @@
 
 							this.actionPool.switchTimer();
 
+							document.dispatchEvent(new CustomEvent('BXBasketResponse', { detail: result, bubbles: true }));
+
 							return;
 
 						}
@@ -600,9 +725,12 @@
 
 					this.actionPool.switchTimer();
 
+					document.dispatchEvent(new CustomEvent('BXBasketResponse', { detail: result, bubbles: true }));
+
 					if (this.isBasketIntegrated() && this.isBasketChanged()) {
 						BX.Sale.OrderAjaxComponent.sendRequest();
-					}
+					}					
+					this.loadProductSales();
 				}, this),
 				onfailure: BX.delegate(function () {
 					this.actionPool.doProcessing(false);
@@ -701,9 +829,10 @@
 				if (this.isBasketChanged()) {
 					this.sortSortedItems(true);
 				}
-				if (length > 0 && length < Object.keys(this.items).length) {
+				if (Object.keys(newItems).length > 0 && length > 0) {
 					for (i in newItems) {
-						this.createBasketItem(newItems[i].ID);
+						if(!BX(this.ids.item + newItems[i].ID))
+							this.createBasketItem(newItems[i].ID);
 					}
 				}
 			}
@@ -1063,6 +1192,7 @@
 				}
 				this.createBasketItem(this.sortedItems[i]);
 				this.checkIsNotCanBuy(this.items[this.sortedItems[i]]);
+				this.setWishlistItem(this.sortedItems[i]);
 			}
 			for (var i = 0; i < this.sortedItems.length; i++) {
 				this.createStringHigh(this.sortedItems[i]);
@@ -1071,17 +1201,39 @@
 			this.loadProductSales();
 		},
 
+		setWishlistItem: function (basketId) {
+			let row = this.getEntity(BX(this.ids.itemListTable), 'basket-item', '[data-id="' + basketId + '"]');
+			if(!row) 
+				row = this.getEntity(BX(this.ids.itemListTable), 'basket-item-delayed', '[data-id="' + basketId + '"]');
+			let productId = row?.dataset?.idReal;
+			if(productId){
+				if (document.cookie.includes('favorites')) {
+					var favoritesIds = this.getCookie('favorites');
+					favoritesIds = JSON.parse(favoritesIds);
+					if (favoritesIds.includes(productId.toString())) {
+						row.querySelector('[data-wishlist="false"]').hidden = true;
+						row.querySelector('[data-wishlist="true"]').hidden = false;
+					}
+				}
+			}
+		},
+
 		loadProductSales: function () {
 			if (this.result.PRODUCT_SALES_SUM > 0) {
-				let lastAlready = this.getEntities(BX(this.ids.itemListTable), "not-exists-header"), list = this.getEntities(BX(this.ids.itemListTable), "basket-item"), last = list[list.length - 1];
+				let lastAlready = this.getEntities(BX(this.ids.itemListTable), "not-exists-header"), list = this.getEntities(BX(this.ids.itemListTable), "basket-item"), last = list[list.length - 1], saleAlert = this.getEntity(BX(this.ids.itemListTable), "basket-sale-alert");
 				var alertTemplate = this.getTemplate('basket-sale-alert-template');
 				if (alertTemplate)
 					var alertTemplateRender = this.render(alertTemplate, this.result);
-
-				if (lastAlready.length) {
+				if(saleAlert) 
+					saleAlert.remove();
+				if (lastAlready.length > 0) {
 					BX(lastAlready[0]).insertAdjacentHTML('beforebegin', alertTemplateRender);
-				} else
+				} else {
+					if(BX(last).nextElementSibling?.hasAttribute('data-string-high'))
+						last = BX(last).nextElementSibling;
 					BX(last).insertAdjacentHTML('afterend', alertTemplateRender);
+				}
+				
 			}
 		},
 
@@ -1141,12 +1293,12 @@
 					let idReal = pr[i].dataset.idReal;
 					if (idReal) {
 						BX.ajax.post(
-							"/ajax/getSimilar.php",
+							"/ajax/getSimilar16042026.php",
 							{ "ID": idReal },
 							function (result) {
 								let obj = BX.processHTML(result);
 								if (obj && obj.HTML) {
-									BX(pr[i]).insertAdjacentHTML('afterend', '<tr data-entity="not-exists-footer" data-id-real="' + idReal + '"><td colspan="7"><div class="cont">' + obj.HTML + '</div></td></tr>');
+									BX(pr[i]).insertAdjacentHTML('afterend', '<div data-entity="not-exists-footer" data-id-real="' + idReal + '" class="new-cart-related">' + obj.HTML + '</div>');
 									$('[data-id-real="' + idReal + '"] .products-mini__slider').slick({ // from main.js
 										dots: false,
 										infinite: false,
@@ -1222,7 +1374,10 @@
 					}
 					else {
 						// insert between
-						BX(this.ids.item + this.sortedItems[sortIndex + 1]).insertAdjacentHTML('beforebegin', basketItemHtml);
+						if(BX(this.ids.item + this.sortedItems[sortIndex + 1]).previousElementSibling.hasAttribute('data-not-exists-header') && this.items[itemId].IS_CAN_BUY)
+							BX(this.ids.item + this.sortedItems[sortIndex + 1]).previousElementSibling.insertAdjacentHTML('beforebegin', basketItemHtml);
+						else
+							BX(this.ids.item + this.sortedItems[sortIndex + 1]).insertAdjacentHTML('beforebegin', basketItemHtml);
 						this.shownItems.splice(sortIndex + 1, 0, itemId);
 					}
 				}
@@ -1559,7 +1714,7 @@
 			}
 		},
 
-		redrawBasketItemNode: function (itemId) {
+		redrawBasketItemNode: function (itemId, from ="") {
 			var basketItemNode = BX(this.ids.item + itemId);
 			var nodeAligner = BX(this.ids.itemHeightAligner + itemId);
 			var nodeToReplace = BX.type.isDomNode(basketItemNode) ? basketItemNode : nodeAligner;
@@ -1576,12 +1731,17 @@
 				}
 
 				var basketItemHtml = this.renderBasketItem(basketItemTemplate, this.items[itemId]);
-
-				nodeToReplace.insertAdjacentHTML('beforebegin', basketItemHtml);
-
+				var remove = true;
+				if(from != "restore") {
+					if(nodeToReplace.previousElementSibling.hasAttribute('data-not-exists-header') && this.items[itemId].IS_CAN_BUY){
+						remove = false;
+					} else
+						nodeToReplace.insertAdjacentHTML('beforebegin', basketItemHtml);
+				}
 
 				this.startDeleteInterval(BX(this.ids.itemHeightAligner + itemId));
-				BX.remove(nodeToReplace);
+				if(remove)
+					BX.remove(nodeToReplace);
 
 
 				if (oldHeight) {
@@ -1599,6 +1759,7 @@
 					this.filter.highlightSearchMatch(this.items[itemId]);
 				}
 			}
+			this.setWishlistItem(itemId);
 		},
 
 		restoreBasketItems: function (items) {
@@ -1636,7 +1797,7 @@
 				this.bindSkuEvents(itemNode, itemData);
 				this.bindImageEvents(itemNode, itemData);
 				this.bindActionEvents(itemNode, itemData);
-				this.bindRestoreAction(itemNode, itemData);
+				//this.bindRestoreAction(itemNode, itemData);
 				this.bindItemWarningEvents(itemNode, itemData);
 				return;
 			}
@@ -2063,6 +2224,12 @@
 				return;
 
 			var entity;
+			if (BX.util.in_array('WISHLIST', this.params.COLUMNS_LIST)) {
+				entity = this.getEntities(node, 'basket-item-wishlist');
+				for (var i = 0, l = entity.length; i < l; i++) {
+					BX.bind(entity[i], 'click', BX.proxy(this.wishlistAction, this));
+				}
+			}
 
 			if (BX.util.in_array('DELETE', this.params.COLUMNS_LIST)) {
 				entity = this.getEntities(node, 'basket-item-delete');
@@ -2084,6 +2251,57 @@
 
 			entity = this.getEntity(node, 'basket-item-show-similar-link');
 			BX.bind(entity, 'click', BX.delegate(function () { this.toggleFilter('similar'); }, this));
+		},
+
+		wishlistAction: function (itemID = 0, node= false) {
+			if(itemID > 0)
+				var itemData = this.items[itemID], entity = node;
+			else
+				var itemData = this.getItemDataByTarget(BX.proxy_context), entity = BX.proxy_context;
+			if (itemData) {
+				var productId = itemData.ID_REAL, action = '';
+				if(productId){
+					if(ym)
+						ym(46201080,'reachGoal','click_favorite');
+					var favoritesIds = {};
+					if (document.cookie.includes('favorites')) {
+						favoritesIds = this.getCookie('favorites');
+						favoritesIds = JSON.parse(favoritesIds);
+						if (!favoritesIds.includes(productId.toString())) { //ad
+							favoritesIds.push(productId.toString());
+							action = 'add';
+						} else { // remove
+							favoritesIds.forEach((item, index, array) => {
+								if (item === productId.toString()) 
+									favoritesIds.splice(index, 1);											   
+							});	
+							action = 'remove';		
+						}
+					} else { //add always
+						var favoritesIds = [productId.toString()];
+						action = 'add';
+					}	
+					if(action == 'add')	{
+						entity.querySelector('[data-wishlist="false"]').hidden = true;
+						entity.querySelector('[data-wishlist="true"]').hidden = false;
+					} else {
+						entity.querySelector('[data-wishlist="false"]').hidden = false;
+						entity.querySelector('[data-wishlist="true"]').hidden = true;
+					}	
+					var favoritesIdsJson = JSON.stringify(favoritesIds);
+					document.cookie = 'favorites=' + favoritesIdsJson + '; max-age=864000; path=/';
+					this.setWishlistHeader(favoritesIds);				
+				}
+			}
+		},
+
+		setWishlistHeader: function (favoritesIds = 0) {
+			const favoritesCount = favoritesIds?.length;
+			const elements = document.querySelectorAll('.js-favorites-count');
+			if(elements.length > 0)
+				elements.forEach(element => {
+				element.textContent = favoritesCount;
+				});
 		},
 
 		deleteAction: function () {
@@ -2141,21 +2359,28 @@
 					if (timerId) {
 						this.clearDeleteInterval(timerId);
 					}
-					this.actionPool.restoreItem(itemData.ID, {
-						PRODUCT_ID: itemData.PRODUCT_ID,
-						QUANTITY: itemData.QUANTITY,
-						PROPS: itemData.PROPS_ALL,
-						SORT: itemData.SORT,
-						MODULE: itemData.MODULE,
-						PRODUCT_PROVIDER_CLASS: itemData.PRODUCT_PROVIDER_CLASS
-					});
+					let target = BX.proxy_context;
+					if (target.closest('[is-string-high]')) {
+						this.highAddAction(target.closest('[is-string-high]'));
+						this.items[itemData.ID].SHOW_RESTORE = false;
+						this.items[itemData.ID].SHOW_LOADING = true;
+					} else {
+						this.actionPool.restoreItem(itemData.ID, {
+							PRODUCT_ID: itemData.PRODUCT_ID,
+							QUANTITY: itemData.QUANTITY,
+							PROPS: itemData.PROPS_ALL,
+							SORT: itemData.SORT,
+							MODULE: itemData.MODULE,
+							PRODUCT_PROVIDER_CLASS: itemData.PRODUCT_PROVIDER_CLASS
+						});
 
-					if (!this.items || !this.items[itemData.ID]) {
-						return;
+						if (!this.items || !this.items[itemData.ID]) {
+							return;
+						}
+						this.items[itemData.ID].SHOW_RESTORE = false;
+						this.items[itemData.ID].SHOW_LOADING = true;
+						this.redrawBasketItemNode(itemData.ID, "restore");
 					}
-					this.items[itemData.ID].SHOW_RESTORE = false;
-					this.items[itemData.ID].SHOW_LOADING = true;
-					this.redrawBasketItemNode(itemData.ID);
 				}, this)
 			);
 			BX.bind(
@@ -2163,6 +2388,13 @@
 				'click',
 				BX.delegate(function () {
 					this.deleteBasketItem(itemData.ID, false, true);
+				}, this)
+			);
+			BX.bind(
+				this.getEntity(node, 'basket-item-wishlist'),
+				'click',
+				BX.delegate(function () {
+					this.wishlistAction(itemData.ID, this.getEntity(node, 'basket-item-wishlist'));
 				}, this)
 			);
 		},
@@ -2426,18 +2658,19 @@
 			BX.bind(sh.querySelector("[data-high-hide]"), 'click', BX.proxy(this.highHide, this));
 			BX.bind(sh.querySelector("[data-high-add]"), 'click', BX.proxy(this.highAdd, this));
 		},
-		highAdd: function () {
-			let itemData = BX.proxy_context,
-				action = '/ajax/add2basketNew.php',
+		highAddAction: function (itemData) {
+			if (!itemData)
+				return;
+			let action = '/ajax/add2basketNew.php',
 				data = {
 					"ajax_basket": "Y",
-					"product_id": itemData.closest('[data-entity="basket-item-string-high"]').dataset.highParent,
-					"product_basket_id": itemData.closest('[data-entity="basket-item-string-high"]').dataset.highParentBasketId,
+					"product_id": itemData.dataset.highParent,
+					"product_basket_id": itemData.dataset.highParentBasketId,
 					"action": "add",
-					"string_id": itemData.closest('[data-entity="basket-item-string-high"]').dataset.string,
-					"string_high": itemData.closest('[data-entity="basket-item-string-high"]').dataset.stringHigh,
-					"quantity": itemData.closest('[data-entity="basket-item-string-high"]').dataset.highParentQuantity,
-					"basket_props": itemData.closest('[data-entity="basket-item-string-high"]').dataset.highParentSku_props,
+					"string_id": itemData.dataset.string,
+					"string_high": itemData.dataset.stringHigh,
+					"quantity": itemData.dataset.highParentQuantity,
+					"basket_props": itemData.dataset.highParentSku_props,
 					"prop[]": 0,
 				};
 			BX.ajax({
@@ -2456,12 +2689,16 @@
 					this.sendRequest('refreshAjax', {
 						fullRecalculation: 'Y'
 					});
-					itemData.closest('[data-entity="basket-item-string-high"]').remove();
+					itemData?.remove();
 				}, this),
 				onfailure: BX.delegate(function () {
 					this.actionPool.doProcessing(false);
 				}, this)
 			});
+		},
+		highAdd: function (el = false) {
+			let itemData = BX.proxy_context;
+			this.highAddAction(itemData.closest('[data-entity="basket-item-string-high"]'));
 		},
 		highHide: function () {
 			let itemData = BX.proxy_context;
