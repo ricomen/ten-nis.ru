@@ -310,7 +310,7 @@ $arParamsCatalog = array_merge(array(
 								<input type="checkbox" value="select-all" name="select-all">
 								<span>Выбрать все</span>
 							</label>
-							<div class="new-cart-table-top__selector select-block">
+							<div class="new-cart-table-top__selector select-block" id="action-selector">
 								<div class="catalog__filter-block-head select-head">
 									<div class="catalog__filter-block-head-arrow">
 										<svg width="11" height="6" viewBox="0 0 11 6" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -326,23 +326,22 @@ $arParamsCatalog = array_merge(array(
 								<div class="catalog__filter-block-body select-body" data-change-selector>
 									<div class="catalog__filter-block-body-list">
 										<div class="catalog__filter-block-option select-option" data-change="Добавить в избранное">
-											<input id="se-1" value="Добавить в избранное" name="Действия" type="radio" class="catalog__filter-block-option-input">
-											<label for="s12" class="catalog__filter-block-option-text">
+											<input id="se-1" value="Добавить в избранное" name="Действия" type="radio" class="catalog__filter-block-option-input" data-entity="change-selector-radio" data-value="wishlist">
+											<label for="se-1" class="catalog__filter-block-option-text">
 												<img src="<?= SITE_TEMPLATE_PATH ?>/img/new_cart/select-icon-1.svg" alt="">
 												Добавить в избранное
 											</label>
 										</div>
 										<div class="catalog__filter-block-option select-option " data-change="Поделиться товарами">
-											<input id="se-2" value="Поделиться товарами" name="Действия" type="radio" class="catalog__filter-block-option-input">
-											<label for="s22" class="catalog__filter-block-option-text">
+											<input id="se-2" value="Поделиться товарами" name="Действия" type="radio" class="catalog__filter-block-option-input" data-entity="change-selector-radio" data-value="share">
+											<label for="se-2" class="catalog__filter-block-option-text">
 												<img src="<?= SITE_TEMPLATE_PATH ?>/img/new_cart/select-icon-2.svg" alt="">
 												Поделиться товарами
 											</label>
 										</div>
 										<div class="catalog__filter-block-option select-option " data-change="Удалить из корзины">
-											<input id="se-3" value="Удалить из ко
-                                            color: #F00;рзины" name="Действия" type="radio" class="catalog__filter-block-option-input">
-											<label for="s32" class="catalog__filter-block-option-text">
+											<input id="se-3" value="Удалить из корзины" name="Действия" type="radio" class="catalog__filter-block-option-input" data-entity="change-selector-radio" data-value="remove">
+											<label for="se-3" class="catalog__filter-block-option-text">
 												<img src="<?= SITE_TEMPLATE_PATH ?>/img/new_cart/select-icon-3.svg" alt="">
 												Удалить из корзины
 											</label>
@@ -352,14 +351,14 @@ $arParamsCatalog = array_merge(array(
 							</div>
 							<div class="new-cart-top__right">
 								<p>Поделиться корзиной:</p>
-								<a href="javascript:void(0)" data-entity="data-share" data-share="url">
+								<a href="javascript:void(0)" data-entity="data-share" data-share="url" data-tip="Ссылка скопирована">
 									<img src="<?= SITE_TEMPLATE_PATH ?>/img/new_cart/table-top-icon-1.svg" alt="Поделиться ссылкой">
 								</a>
-								<a href="javascript:void(0)" data-entity="data-share" data-share="tg">
-									<img src="<?= SITE_TEMPLATE_PATH ?>/img/new_cart/table-top-icon-2.svg" alt="Поделиться в Telegram">
-								</a>
 								<a href="javascript:void(0)" data-entity="data-share" data-share="max">
-									<img src="<?= SITE_TEMPLATE_PATH ?>/img/new_cart/table-top-icon-3.svg" alt="Поделиться в Max">
+									<img src="<?= SITE_TEMPLATE_PATH ?>/img/new_cart/table-top-icon-2.svg" alt="Поделиться в Max">
+								</a>
+								<a href="javascript:void(0)" data-entity="data-share" data-share="tg">
+									<img src="<?= SITE_TEMPLATE_PATH ?>/img/new_cart/table-top-icon-3.svg" alt="Поделиться в Telegram">
 								</a>
 							</div>
 						</div>

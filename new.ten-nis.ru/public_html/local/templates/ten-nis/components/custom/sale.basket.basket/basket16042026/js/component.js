@@ -188,17 +188,43 @@
 		},
 		shareRepostUrl: function (repostUrl) {
 			if (!repostUrl)
-				return;
+				return Promise.resolve(false);
 
 			if (this.isMobile && navigator.share) {
-				navigator.share({
+				return navigator.share({
 					title: 'ten-nis.ru',
 					text: 'Поделиться корзиной',
 					url: repostUrl
-				}).catch(function () {});
-			} else if (navigator.clipboard && navigator.clipboard.writeText) {
-				navigator.clipboard.writeText(repostUrl);
+				}).then(function () { return true; }).catch(function () { return false; });
 			}
+
+			if (navigator.clipboard && navigator.clipboard.writeText && window.isSecureContext) {
+				return navigator.clipboard.writeText(repostUrl)
+					.then(function () { return true; })
+					.catch(function () { return false; });
+			}
+
+			try {
+				var ta = document.createElement('textarea');
+				ta.value = repostUrl;
+				ta.style.cssText = 'position:fixed;top:-1000px;left:-1000px;opacity:0;';
+				document.body.appendChild(ta);
+				ta.select();
+				var ok = document.execCommand('copy');
+				document.body.removeChild(ta);
+				return Promise.resolve(!!ok);
+			} catch (e) {
+				return Promise.resolve(false);
+			}
+		},
+
+		showCopyTip: function (el) {
+			if (!el || !el.classList) return;
+			el.classList.add('is-copied');
+			clearTimeout(el._copyTipTimer);
+			el._copyTipTimer = setTimeout(function () {
+				el.classList.remove('is-copied');
+			}, 1500);
 		},
 		
 		clickActionShare: function (event) {
@@ -222,7 +248,10 @@
 				return;
 
 			if(action == "url") {
-				this.shareRepostUrl(repostUrl);
+				var self = this;
+				this.shareRepostUrl(repostUrl).then(function (ok) {
+					if (ok) self.showCopyTip(target);
+				});
 			} else if (action == "max") {
 				const telegramShareUrl = this.buildMaxShareUrl(repostUrl, text);	
 				window.open(telegramShareUrl, '_blank');
