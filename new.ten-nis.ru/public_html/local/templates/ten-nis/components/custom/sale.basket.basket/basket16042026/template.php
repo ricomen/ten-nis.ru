@@ -352,13 +352,13 @@ $arParamsCatalog = array_merge(array(
 							</div>
 							<div class="new-cart-top__right">
 								<p>Поделиться корзиной:</p>
-								<a href="javascript:void(0)">
+								<a href="javascript:void(0)" data-entity="data-share" data-share="url">
 									<img src="<?= SITE_TEMPLATE_PATH ?>/img/new_cart/table-top-icon-1.svg" alt="Поделиться ссылкой">
 								</a>
-								<a href="javascript:void(0)">
+								<a href="javascript:void(0)" data-entity="data-share" data-share="tg">
 									<img src="<?= SITE_TEMPLATE_PATH ?>/img/new_cart/table-top-icon-2.svg" alt="Поделиться в Telegram">
 								</a>
-								<a href="javascript:void(0)">
+								<a href="javascript:void(0)" data-entity="data-share" data-share="max">
 									<img src="<?= SITE_TEMPLATE_PATH ?>/img/new_cart/table-top-icon-3.svg" alt="Поделиться в Max">
 								</a>
 							</div>
