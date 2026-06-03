@@ -163,25 +163,26 @@
 				BX.bind(entities[i], 'click', BX.proxy(this.clickActionSelector, this));
 			}
 		},
-		// bindActionShare: function () {
-		// 	var entities = this.getEntities(BX(this.ids.basketRoot), 'data-share');
-		// 	for (var i = 0; i < entities.length; i++) {
-		// 		BX.bind(entities[i], 'click', BX.proxy(this.clickActionShare, this));
-		// 	}
-		// },
 		bindActionShare: function () {
-			var root = BX(this.ids.basketRoot);
-			if (!root || root.dataset.shareBound === '1') return;
-			root.dataset.shareBound = '1';
-			BX.bind(root, 'click', BX.proxy(function (e) {
-				var target = BX.getEventTarget(e);
-				var shareBtn = target && target.closest
-					? target.closest('[data-entity="data-share"]')
-					: null;
-				if (!shareBtn) return;
-				this.clickActionShare(e);
-			}, this));
+			var entities = this.getEntities(BX(this.ids.basketRoot), 'data-share');
+			console.log('entities: ', entities);
+			for (var i = 0; i < entities.length; i++) {
+				BX.bind(entities[i], 'click', BX.proxy(this.clickActionShare, this));
+			}
 		},
+		// bindActionShare: function () {
+		// 	var root = BX(this.ids.basketRoot);
+		// 	if (!root || root.dataset.shareBound === '1') return;
+		// 	root.dataset.shareBound = '1';
+		// 	BX.bind(root, 'click', BX.proxy(function (e) {
+		// 		var target = BX.getEventTarget(e);
+		// 		var shareBtn = target && target.closest
+		// 			? target.closest('[data-entity="data-share"]')
+		// 			: null;
+		// 		if (!shareBtn) return;
+		// 		this.clickActionShare(e);
+		// 	}, this));
+		// },
 		getCookie: function(name)
 		{
 			var matches = document.cookie.match(new RegExp(
@@ -196,28 +197,46 @@
 			});
 			return `${window.location.pathname}repost/${params.length ? '?' + params.join('&') : ''}`;
 		},
-		// isMobileCheck: function () {
-		// 	return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-		// },
-		clickActionShare: function (event) {
-			var text = "", target = BX.getEventTarget(event).closest('a'),
-			entities = this.getEntities(BX(this.ids.itemListTable), 'basket-item-checkbox'),
-			action = target.dataset?.share||"", shares = {}, repostUrl = '';
-			for (var i = 0; i < entities.length; i++) {
-				let row = entities[i].closest('[data-id-real]'),  idReal = row?.dataset?.idReal,  productId = row?.dataset?.product_id;
-				shares[idReal] = (idReal != productId ? productId : "");				
-			}
-			if(Object.keys(shares).length <= 0)
+		shareRepostUrl: function (repostUrl) {
+			if (!repostUrl)
 				return;
+
+			if (this.isMobile && navigator.share) {
+				navigator.share({
+					title: 'ten-nis.ru',
+					text: 'Поделиться корзиной',
+					url: repostUrl
+				});
+			} else {
+				navigator.clipboard.writeText(repostUrl);
+			}
+		},
+		clickActionShare: function (event) {
+			var text = "";
+			var target = BX.getEventTarget(event).closest('a');
+			var entities = this.getEntities(BX(this.ids.itemListTable), 'basket-item-checkbox');
+			var action = target.dataset?.share||"", shares = {}, repostUrl = '';
+
+			for (var i = 0; i < entities.length; i++) {
+				let row = entities[i].closest('[data-id-real]');
+				let idReal = row?.dataset?.idReal;
+				let productId = row?.dataset?.product_id;
+				shares[idReal] = (idReal != productId ? productId : "");
+			}
+
+			if(Object.keys(shares).length <= 0) return;
+
 			repostUrl = this.buildRepostUrl(shares);
+
 			if(!repostUrl)
 				return;
+
 			if(action == "url") {
-				// if pc = to clipboard, else default share apps
-			} else if(action == "max") {
+				this.shareRepostUrl(repostUrl);
+			} else if (action == "max") {
 				const telegramShareUrl = this.buildMaxShareUrl(repostUrl, text);	
 				window.open(telegramShareUrl, '_blank');
-			} else if(action == "tg") {	
+			} else if (action == "tg") {	
 				const telegramShareUrl = this.buildTelegramShareUrl(repostUrl, text);	
 				window.open(telegramShareUrl, '_blank');
 			}
@@ -231,8 +250,7 @@
             const encodedUrl = encodeURIComponent(window.location.origin + url);
             const encodedText = text ? encodeURIComponent(text) : '';
             let shareUrl = `tg://msg_url?url=${encodedUrl}`;
-			// if (!this.isMobileDevice)
-			// 	shareUrl = `https://t.me/share/url?url=${encodedUrl}`;
+
 			if (!this.isMobile)
 				shareUrl = `https://t.me/share/url?url=${encodedUrl}`;
             if (encodedText) 
@@ -243,8 +261,7 @@
             const encodedUrl = encodeURIComponent(window.location.origin + url);
             const encodedText = text ? encodeURIComponent(text) : '';
             let shareUrl = `https://max.ru/:share?text=${encodedUrl}`;
-			// if (!this.isMobileDevice)
-			// 	shareUrl = `https://max.ru/:share?text=${encodedUrl}`;
+
 			if (!this.isMobile)
 				shareUrl = `https://max.ru/:share?text=${encodedUrl}`;
             if (encodedText) 
@@ -284,11 +301,13 @@
 				}	
 				row.querySelector('[data-entity="basket-item-checkbox"]').checked = false;			
 			}
+
 			if(action == "wishlist") {
+
 				this.setWishlistHeader(favoritesIds);
+
 			} else if(action == "share" && Object.keys(this.shares).length > 0) {
-				window.repostUrl = this.buildRepostUrl(this.shares);
-				// if pc = to clipboard, else default share apps
+				this.shareRepostUrl(this.buildRepostUrl(this.shares));
 			}			
 		},
 
