@@ -18,8 +18,6 @@ $this->addExternalJs($templateFolder . '/js/action-pool.js');
 $this->addExternalJs($templateFolder . '/js/filter.js');
 $this->addExternalJs($templateFolder . '/js/component.js');
 
-$this->addExternalCss($templateFolder . '/css/cart_24042026.css');
-
 $mobileColumns = isset($arParams['COLUMNS_LIST_MOBILE'])
 	? $arParams['COLUMNS_LIST_MOBILE']
 	: $arParams['COLUMNS_LIST'];
@@ -31,7 +29,6 @@ foreach ($jsTemplates->getChildren() as $jsTemplate) {
 	if ($jsTemplate->getExtension() == "php")
 		include($jsTemplate->getPath());
 }
-
 
 $arParamsCatalog = array_merge(array(
 	"IBLOCK_TYPE" => "catalog",
@@ -312,7 +309,7 @@ $arParamsCatalog = array_merge(array(
 								<input type="checkbox" value="select-all" name="select-all">
 								<span>Выбрать все</span>
 							</label>
-							<div class="new-cart-table-top__selector select-block" id="action-selector">
+							<div class="new-cart-table-top__selector select-block">
 								<div class="catalog__filter-block-head select-head">
 									<div class="catalog__filter-block-head-arrow">
 										<svg width="11" height="6" viewBox="0 0 11 6" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -325,25 +322,26 @@ $arParamsCatalog = array_merge(array(
 										</div>
 									</div>
 								</div>
-								<div class="catalog__filter-block-body select-body" data-change-selector>
+								<div class="catalog__filter-block-body select-body" id="action-selector" data-change-selector="">
 									<div class="catalog__filter-block-body-list">
-										<div class="catalog__filter-block-option select-option" data-change="Добавить в избранное">
-											<input id="se-1" value="Добавить в избранное" name="Действия" type="radio" class="catalog__filter-block-option-input" data-entity="change-selector-radio" data-value="wishlist">
-											<label for="se-1" class="catalog__filter-block-option-text">
+										<div class="catalog__filter-block-option select-option" data-entity="change-selector-radio">
+											<input value="wishlist" name="action_selector" type="radio" class="catalog__filter-block-option-input">
+											<label data-value="wishlist" class="catalog__filter-block-option-text">
 												<img src="<?= SITE_TEMPLATE_PATH ?>/img/new_cart/select-icon-1.svg" alt="">
 												Добавить в избранное
 											</label>
 										</div>
-										<div class="catalog__filter-block-option select-option " data-change="Поделиться товарами">
-											<input id="se-2" value="Поделиться товарами" name="Действия" type="radio" class="catalog__filter-block-option-input" data-entity="change-selector-radio" data-value="share">
-											<label for="se-2" class="catalog__filter-block-option-text">
+										<div class="catalog__filter-block-option select-option" data-entity="change-selector-radio">
+											<input value="share" name="action_selector" type="radio" class="catalog__filter-block-option-input">
+											<label data-value="share" class="catalog__filter-block-option-text">
 												<img src="<?= SITE_TEMPLATE_PATH ?>/img/new_cart/select-icon-2.svg" alt="">
 												Поделиться товарами
 											</label>
 										</div>
-										<div class="catalog__filter-block-option select-option " data-change="Удалить из корзины">
-											<input id="se-3" value="Удалить из корзины" name="Действия" type="radio" class="catalog__filter-block-option-input" data-entity="change-selector-radio" data-value="remove">
-											<label for="se-3" class="catalog__filter-block-option-text">
+								
+										<div class="catalog__filter-block-option select-option" data-entity="change-selector-radio">
+											<input value="remove" name="action_selector" type="radio" class="catalog__filter-block-option-input">
+											<label data-value="remove" class="catalog__filter-block-option-text">
 												<img src="<?= SITE_TEMPLATE_PATH ?>/img/new_cart/select-icon-3.svg" alt="">
 												Удалить из корзины
 											</label>
